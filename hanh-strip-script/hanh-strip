@@ -1,0 +1,21 @@
+save_usrlib="libquadmath.so.0.0.0 ld-2.33.so libc-2.33.so libthread_db-1.0.so
+             libitm.so.1.0.0 libatomic.so.1.2.0" 
+
+cd /usr/lib
+
+for LIB in $save_usrlib $(readlink /usr/lib/libstdc++.so); do
+    objcopy --only-keep-debug $LIB $LIB.dbg
+    strip --strip-unneeded $LIB
+    objcopy --add-gnu-debuglink=$LIB.dbg $LIB
+done
+
+unset LIB save_lib save_usrlib
+
+find /usr/lib -type f -name \*.a \
+   -exec strip --strip-debug {} ';'
+
+find /usr/lib -type f -name \*.so* ! -name \*dbg \
+   -exec strip --strip-unneeded {} ';'
+
+find /usr/{bin,sbin,libexec} -type f \
+    -exec strip --strip-all {} ';'

@@ -1,0 +1,19 @@
+pkgname=hanhiso-initcpio 
+pkgver=22082021
+pkgrel=3
+pkgdesc="Hanh mkinitcpio hook and configuration file"
+arch=(x86_64)
+license=('none')
+source=(hanhiso.hook
+	hanhiso.install
+	mkinitcpio.conf)
+sha256sums=('SKIP' 'SKIP' 'SKIP')
+install=after.install
+
+package(){
+install -dm755 $pkgdir/usr/lib/initcpio/{hooks,install}
+install -dm755 $pkgdir/etc/hanhiso
+install -Dm644 hanhiso.hook $pkgdir/usr/lib/initcpio/hooks/hanhiso
+install -Dm644 hanhiso.install $pkgdir/usr/lib/initcpio/install/hanhiso
+install -Dm644 mkinitcpio.conf $pkgdir/etc/hanhiso/
+}

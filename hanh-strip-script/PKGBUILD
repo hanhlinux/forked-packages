@@ -1,0 +1,15 @@
+pkgname=hanh-strip-script
+pkgver=1.0
+pkgrel=1
+pkgdesc="Stripping script for Hanh Linux"
+arch=(x86_64)
+license=(none)
+depends=(binutils)
+source=('hanh-strip')
+sha256sums=('SKIP')
+
+package(){
+install -dm755 $pkgdir/usr/bin
+install -Dm755 hanh-strip $pkgdir/usr/bin
+
+}

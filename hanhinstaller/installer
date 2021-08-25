@@ -1,0 +1,150 @@
+clear
+
+## Set functions
+_inputnext() {
+
+read -p "Press any to move to next step"
+clear
+
+} 
+
+## Show introduction
+
+cat /usr/lib/hanhinstaller/info/introduce 
+_inputnext
+
+## Disk partition
+
+echo "MODIFY DISK PARTITION(S)"
+echo "Showing available disks..."
+lsblk
+fdisk -l | tee /run/disks >/dev/null 2>&1
+echo "Do you want more disk(s) information? [Y/N]" 
+read choice
+case $choice in
+Y|y) vim /run/disks;;
+N|n) echo "Skipping...";;
+esac
+unset choice
+rm -rf /run/disks
+echo "Choose disk to install"
+read disk
+echo "Disk used" $disk
+echo "Do you want to modify disk partition? [Y/N]"
+echo "Y) fdisk"
+echo "N) no"
+read choice
+case $choice in 
+Y|y) fdisk $disk;;
+N|n) echo "Skipping...";;
+esac
+unset choice
+_inputnext 
+
+## INSTALL TO PARTITION
+
+echo "INSTALL TO PARTITION"
+echo "Updating disk(s) data..."
+lsblk 
+fdisk -l | tee /run/disks > /dev/null 2>&1
+echo "See again more details disk information? [Y/N]"
+read choice 
+case $choice in
+Y|y) vim /run/disks;;
+N|n) echo "Skipping...";;
+esac
+unset choice 
+echo "Choose partiton to install"
+read part
+echo "Partition used: " $part
+echo "Do you really want to use this partition? We will format this partition [Y/N]"
+case $choice in
+Y|y) echo "Processing";; 
+N|n) exit;;
+esac
+unset choice
+
+mkfs.ext4 $part
+mkdir /run/cdrom > /dev/null 2>&1
+mount /dev/sr0 /run/cdrom > /dev/null 2>&1
+mount $part /mnt > /dev/null 2>&1
+unsquashfs -f -d /mnt /run/cdrom/fs/fs.sfs 
+echo $part / ext4 rw,relatime 0 1 >> /mnt/etc/fstab
+mount -v --bind /dev /mnt/dev > /dev/null 2>&1
+mount -v --bind /dev/pts /mnt/dev/pts > /dev/null 2>&1
+mount -vt sysfs sysfs /mnt/sys > /dev/null 2>&1
+mount -vt proc proc /mnt/proc > /dev/null 2>&1
+mount -vt tmpfs tmpfs /mnt/tmp > /dev/null 2>&1
+mount -vt tmpfs tmpfs /mnt/run > /dev/null 2>&1
+_inputnext 
+
+## TIMEZONE
+echo "TIMEZONE"
+echo "Do you want to see available timezones? [Y/N]"
+read choice
+case $choice in
+Y|y) vim /usr/lib/hanhinstaller/info/timezone;;
+N|n) echo "Skipping...";;
+esac
+unset choice
+
+echo "What timezone do you want to use?" 
+read time
+echo Selected timezone is $time
+echo "ln -sf /usr/share/zoneinfo/"$time "/etc/localtime" >> /mnt/run/inchroot
+_inputnext
+
+## LOCALE
+echo "LOCALE"
+read -p "Press any key to edit /etc/locale.gen. Remember the exactly locale you desired. We will need to re-enter it"
+vim /mnt/etc/locale.gen
+echo "Re-enter your desired locale (only one)"
+read locale
+echo "Locale used:" $locale
+echo "LANG="$locale >> /mnt/etc/locale.conf
+echo "locale-gen" >> /mnt/run/inchroot
+_inputnext 
+
+## HOST
+echo "HOST"
+echo "Enter hostname"
+read host
+echo $host >> /mnt/etc/hostname
+echo "127.0.0.1 localhost" $host >> /mnt/etc/hosts
+read -p "Press enter to modify your hostname in OpenRC configuration. Remember your hostname"
+vim /mnt/etc/conf.d/hostname
+_inputnext
+
+## USER AND PASSWORD
+chroot /mnt /bin/bash -c "sh /usr/lib/hanhinstaller/shell/user.sh"
+read -p "Press any key to move to next step"
+clear
+
+## FINSHING SYSTEM
+echo "Finishing setup..."
+echo "Do you want to drop a chroot shell for doing some other work? (prepare for GRUB EFI boot, modify /etc/fstab,...)[Y/N]"
+read choice
+case $choice in 
+Y|y) chroot /mnt;;
+N|n) echo "Skipping...";;
+esac
+unset choice
+echo "Finishing some other work..."
+cp -r /usr/share/factory/etc/issue /mnt/etc/issue
+rm -rf /mnt/boot/initramfs*
+echo "mkinitcpio -p linux" >> /mnt/run/inchroot
+echo "Use [D]efault or [C]ustom command for GRUB installation? [D/C]"
+read choice
+case $choice in 
+D|d) echo "grub-install --target i386-pc" $disk >> /mnt/run/inchroot;;
+C|c) echo "Enter custom command for GRUB installation:";
+read command; 
+echo $command >> /mnt/run/inchroot;;
+esac
+echo "grub-mkconfig -o /boot/grub/grub.cfg" >> /mnt/run/inchroot
+chmod 755 /mnt/run/inchroot
+chroot /mnt /bin/bash -c "/run/inchroot"
+_inputnext
+echo "Thanks for installing Hanh to your device."
+read -p "Press any key to exit"
+

@@ -1,0 +1,16 @@
+pkgname=hanhinstaller
+pkgver=19082021
+pkgrel=2
+pkgdesc="Hanh installer"
+arch=(x86_64)
+license=('None')
+source=(installer introduce timezone 'user.sh')
+sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP')
+
+package(){
+install -dm755 $pkgdir/usr/bin
+install -dm755 $pkgdir/usr/lib/hanhinstaller/{info,shell}
+install -Dm755 installer $pkgdir/usr/bin/
+install -Dm755 user.sh $pkgdir/usr/lib/hanhinstaller/shell
+install -Dm755 {introduce,timezone} $pkgdir/usr/lib/hanhinstaller/info
+}

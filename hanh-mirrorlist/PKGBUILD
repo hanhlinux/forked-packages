@@ -1,0 +1,13 @@
+pkgname=hanh-mirrorlist
+pkgver=1.0
+pkgrel=1
+pkgdesc="Hanh Linux mirrorlist"
+arch=(x86_64)
+license=('None')
+source=(mirrorlist-hanh)
+sha256sums=('SKIP')
+
+package(){
+install -dm755 $pkgdir/etc/pacman.d
+install -Dm644 mirrorlist-hanh $pkgdir/etc/pacman.d/
+}

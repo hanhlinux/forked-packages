@@ -1,0 +1,13 @@
+Welcome to Hanh Linux Installer! 
+
+List of tasks:
+
+1. Modify disk partition(s)
+2. Install to partition 
+3. Choose timezone
+4. Choose locale 
+5. Set hostname
+6. Change root password
+7. Add user
+8. Install optional packages 
+9. Finshing system setup (bootloader,...)

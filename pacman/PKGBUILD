@@ -1,0 +1,69 @@
+# vim: set ts=2 sw=2 et:
+# Maintainer:
+
+pkgname=pacman
+pkgver=6.0.0
+pkgrel=7
+pkgdesc="A library-based package manager with dependency support"
+arch=('x86_64')
+url="https://www.archlinux.org/pacman/"
+license=('GPL')
+depends=('bash' 'glibc' 'libarchive' 'curl')
+makedepends=('meson')
+checkdepends=('python' 'fakechroot')
+optdepends=('perl-locale-gettext: translation support in makepkg-template')
+provides=('libalpm.so')
+backup=(etc/pacman.conf
+        etc/makepkg.conf)
+options=('strip' 'debug')
+source=(https://sources.archlinux.org/other/pacman/$pkgname-$pkgver.tar.xz
+        pacman-6.0.0-fix-404-download.patch::https://gitlab.archlinux.org/pacman/pacman/-/commit/3401f9e142ac4c701cd98c52618cb13164f2146b.patch
+        pacman-6.0.0-fix-key-import-double-free.patch::https://gitlab.archlinux.org/pacman/pacman/-/commit/542910d684191eb7f25ddc5d3d8fe3060028a267.patch
+        pacman.conf
+        makepkg.conf )
+sha256sums=('SKIP'
+            'SKIP'
+            'SKIP'
+            'SKIP'
+            'SKIP')
+
+
+prepare() {
+  cd "$pkgname-$pkgver"
+  patch -p1 -i "$srcdir"/pacman-6.0.0-fix-404-download.patch
+  patch -p1 -i "$srcdir"/pacman-6.0.0-fix-key-import-double-free.patch
+}
+
+build() {
+  cd "$pkgname-$pkgver"
+
+  meson --prefix=/usr \
+        --buildtype=plain \
+        -Ddoc=disabled \
+        -Ddoxygen=disabled \
+        -Dscriptlet-shell=/usr/bin/bash \
+        -Dldconfig=/usr/bin/ldconfig \
+        -Dgpgme=disabled \
+        build
+
+  meson compile -C build
+}
+
+check() {
+  cd "$pkgname-$pkgver"
+
+  meson test -C build
+}
+
+package() {
+  cd "$pkgname-$pkgver"
+
+  depends=('bash' 'glibc' 'libarchive' 'curl' 'artix-mirrorlist' 'archlinux-mirrorlist' 'hanh-mirrorlist')
+
+  DESTDIR="$pkgdir" meson install -C build
+
+  # install Arch specific stuff
+  install -dm755 "$pkgdir/etc"
+  install -m644 "$srcdir/pacman.conf" "$pkgdir/etc"
+  install -m644 "$srcdir/makepkg.conf" "$pkgdir/etc"
+}

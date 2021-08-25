@@ -1,0 +1,40 @@
+From 3401f9e142ac4c701cd98c52618cb13164f2146b Mon Sep 17 00:00:00 2001
+From: Allan McRae <allan@archlinux.org>
+Date: Wed, 2 Jun 2021 21:48:53 +1000
+Subject: [PATCH] libalpm: prevent download error pages ending up in package
+ files
+
+Some servers respond with error pages (e.g. 404.html) when a package is
+not present. These were getting written to packages before moving onto
+the next server. Reset the download progress on 400+ error conditions
+to avoid this.
+
+Signed-off-by: Allan McRae <allan@archlinux.org>
+---
+ lib/libalpm/dload.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/lib/libalpm/dload.c b/lib/libalpm/dload.c
+index 2d8b4d6d..3eea998b 100644
+--- a/lib/libalpm/dload.c
++++ b/lib/libalpm/dload.c
+@@ -510,6 +510,16 @@ static int curl_check_finished_download(CURLM *curlm, CURLMsg *msg,
+ 							payload->remote_name, hostname, payload->error_buffer);
+ 					server_soft_error(handle, payload->fileurl);
+ 				}
++
++				fflush(payload->localf);
++				if(fstat(fileno(payload->localf), &st) == 0 && st.st_size != payload->initial_size) {
++					/* an html error page was written to the file, reset it */
++					if(ftruncate(fileno(payload->localf), payload->initial_size)) {
++						RET_ERR(handle, ALPM_ERR_SYSTEM, -1);
++					}
++					fseek(payload->localf, payload->initial_size, SEEK_SET);
++				}
++
+ 				if(curl_retry_next_server(curlm, curl, payload) == 0) {
+ 					(*active_downloads_num)++;
+ 					return 2;
+-- 
+GitLab
+

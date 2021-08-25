@@ -1,0 +1,88 @@
+pkgbase=vim
+pkgname=('vim-minimal' 'vim-runtime-minimal')
+pkgver=8.2.3340
+_versiondir=82
+pkgrel=1
+pkgdesc='Vi Improved, a highly configurable, improved version of the vi text editor'
+url='https://www.vim.org'
+arch=('x86_64')
+license=('custom:vim')
+source=(https://github.com/vim/vim/archive/v${pkgver}/${pkgbase}-${pkgver}.tar.gz)
+sha256sums=('SKIP')
+
+build() {
+  echo "Building vim..."
+  (cd vim-${pkgver}
+    ./configure \
+      --prefix=/usr \
+      --localstatedir=/var/lib/vim \
+      --with-features=tiny \
+      --with-compiledby='Hanh Linux' \
+      --with-x=no \
+      --disable-gui \
+     --disable-canberra
+    make
+  )
+
+}
+
+check() {
+  cd vim-${pkgver}
+  TERM=xterm make -j1 test
+}
+
+package_vim-runtime-minimal() {
+  pkgdesc+=' (shared runtime)'
+  optdepends=('sh: support for some tools and macros')
+  cd vim-${pkgver}
+
+  make -j1 VIMRCLOC=/etc DESTDIR="${pkgdir}" install
+  # man and bin files belong to 'vim'
+  rm -r "${pkgdir}"/usr/share/man/ "${pkgdir}"/usr/bin/
+
+  # Don't forget logtalk.dict
+  install -Dm 644 runtime/ftplugin/logtalk.dict \
+    "${pkgdir}"/usr/share/vim/vim${_versiondir}/ftplugin/logtalk.dict
+
+  # rgb.txt file
+  install -Dm 644 runtime/rgb.txt \
+    "${pkgdir}"/usr/share/vim/vim${_versiondir}/rgb.txt
+
+  # no desktop files and icons
+  rm -r "${pkgdir}"/usr/share/{applications,icons}
+
+  # license
+  install -dm 755 "${pkgdir}"/usr/share/licenses/vim-runtime
+  ln -s /usr/share/vim/vim${_versiondir}/doc/uganda.txt \
+    "${pkgdir}"/usr/share/licenses/vim-runtime/license.txt
+
+}
+
+package_vim-minimal() {
+  depends=("vim-runtime-minimal=${pkgver}-${pkgrel}" 'glibc' 'zlib')
+
+  cd vim-${pkgver}
+  make -j1 VIMRCLOC=/etc DESTDIR="${pkgdir}" install
+
+  # provided by (n)vi in core
+  rm "${pkgdir}"/usr/bin/{ex,view}
+
+  # delete some manpages
+  find "${pkgdir}"/usr/share/man -type d -name 'man1' 2>/dev/null | \
+    while read _mandir; do
+    cd "${_mandir}"
+    rm -f ex.1 view.1 # provided by (n)vi
+    rm -f evim.1    # this does not make sense if we have no GUI
+  done
+
+  # Runtime provided by runtime package
+  rm -r "${pkgdir}"/usr/share/vim
+
+  # remove gvim.desktop as not included
+  rm -rf "${pkgdir}"/usr/share/{applications,icons}
+
+  # license
+  install -Dm 644 runtime/doc/uganda.txt \
+    "${pkgdir}"/usr/share/licenses/${pkgname}/license.txt
+}
+

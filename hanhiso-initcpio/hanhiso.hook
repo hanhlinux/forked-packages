@@ -1,0 +1,64 @@
+_do_iso() {
+# Create some required directories and variables
+mkdir -p /run/cdrom
+mkdir -p /dev/disk/by-label/
+mkdir -p /run/cowspace
+export LINK=/dev/disk/by-label/hanhlinux
+# Find the installation media
+echo "Prepare blkid to be ready..."
+blkid
+# Due to a problem in booting, adding a `read` command will fix this. 
+read -p "Press any key to continue"
+# Check out the command line 
+cmd=$(cat /proc/cmdline)
+for x in $cmd ; do
+     case $x in
+	isolabel=*) isolabel=${x#*=};;
+	isouuid=*) isouuid=${x#*=};;
+	isodev=*) isodev=${x#*=};;
+     esac
+done
+# Create link
+if [[ ! -z $isodev ]]; then
+ln -sf $isodev $LINK
+elif [[ ! -z $isouuid ]]; then
+ln -sf $(blkid | grep $isouuid | cut -d ":" -f1) $LINK
+elif [[ ! -z $isolabel ]]; then
+ln -sf $(blkid | grep -i $isolabel | cut -d ":" -f1) $LINK
+else 
+ln -sf $(blkid | grep -i hanhlinux | cut -d ":" -f1) $LINK
+fi
+mount -o ro $LINK /run/cdrom
+}
+
+_dmsetup_fs(){
+losetup /dev/loop0 /run/cdrom/fs/fs.sfs
+truncate -s 128M /run/cowspace/empty
+losetup /dev/loop1 /run/cowspace/empty
+dmsetup create hanh --table "0 $(blockdev --getsz /dev/loop0) snapshot /dev/loop0 /dev/loop1 p 8"
+}
+
+_export_var() {
+export mount_handler="hanh_mount_handler"
+export root=/dev/mapper/hanh
+export rootfstype=squashfs
+export new_root=/new_root
+export init=/usr/bin/openrc-init
+}
+
+run_hook() {
+for MODULES in squashfs isofs loop dm_snapshot overlay
+do
+modprobe $MODULES
+done
+_do_iso
+_dmsetup_fs
+_export_var
+}
+
+hanh_mount_handler() {
+mount -t ${rootfstype} -o ro ${root} ${new_root}
+
+mount -t tmpfs -o mode=0755 tmpfs ${new_root}/tmp
+mount -t tmpfs -o mode=0755 tmpfs ${new_root}/root/
+}

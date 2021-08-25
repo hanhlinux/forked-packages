@@ -1,0 +1,45 @@
+From 542910d684191eb7f25ddc5d3d8fe3060028a267 Mon Sep 17 00:00:00 2001
+From: morganamilo <morganamilo@archlinux.org>
+Date: Thu, 3 Jun 2021 19:45:22 +0100
+Subject: [PATCH] libalpm: fix double free when importing key
+
+Comit 5151de30 tried to fix leaking memory when importing a key. However
+key_search_keyserver() writes to the key passed in, making the original
+uid and fingerprint unreachable, causing the new uid and fingerprint to
+double free.
+
+Fixes FS#71107
+
+Signed-off-by: Allan McRae <allan@archlinux.org>
+---
+ lib/libalpm/signing.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/lib/libalpm/signing.c b/lib/libalpm/signing.c
+index b1b50bc8..a7be3a1a 100644
+--- a/lib/libalpm/signing.c
++++ b/lib/libalpm/signing.c
+@@ -513,6 +513,10 @@ int _alpm_key_import(alpm_handle_t *handle, const char *uid, const char *fpr)
+ 				.key = &fetch_key
+ 			};
+ 	QUESTION(handle, &question);
++
++	free(fetch_key.uid);
++	free(fetch_key.fingerprint);
++
+ 	if(question.import) {
+ 		/* Try to import the key from a WKD first */
+ 		if(email_from_uid(uid, &email) == 0) {
+@@ -538,9 +542,6 @@ int _alpm_key_import(alpm_handle_t *handle, const char *uid, const char *fpr)
+ 		}
+ 	}
+ 	gpgme_key_unref(fetch_key.data);
+-	free(fetch_key.uid);
+-	free(fetch_key.fingerprint);
+-
+ 	return ret;
+ }
+ 
+-- 
+GitLab
+
