@@ -1,6 +1,6 @@
 pkgname=hanhinstaller
-pkgver=19082021
-pkgrel=2
+pkgver=20092021
+pkgrel=1
 pkgdesc="Hanh installer"
 arch=(x86_64)
 license=('None')
