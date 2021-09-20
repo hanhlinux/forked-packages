@@ -1,3 +1,4 @@
+# Use `makepkg --skippgpcheck` to build the package
 ## "1" to enable IA32-EFI build in Arch x86_64, "0" to disable
 _IA32_EFI_IN_ARCH_X64="1"
 
@@ -50,14 +51,13 @@ fi
 
 source=("git+https://git.savannah.gnu.org/git/grub.git#tag=${_tag}?signed"
         "git+https://git.savannah.gnu.org/git/gnulib.git#commit=${_gnulib_commit}"
-        "https://ftp.gnu.org/gnu/unifont/unifont-${_unifont_ver}/unifont-${_unifont_ver}.bdf.gz"{,.sig}
+        "https://ftp.gnu.org/gnu/unifont/unifont-${_unifont_ver}/unifont-${_unifont_ver}.bdf.gz"
         '0001-00_header-add-GRUB_COLOR_-variables.patch'
         '0002-10_linux-detect-archlinux-initramfs.patch'
         'grub.default'
         'update-grub')
 
 sha256sums=('SKIP'
-            'SKIP'
             'SKIP'
             'SKIP'
             'SKIP'
