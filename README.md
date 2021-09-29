@@ -1,6 +1,8 @@
 # forked-packages
-The forked packages used in old Artix-based Hanh Linux.
+**WARNING: This repository is deprecated**
 
+
+The forked packages used in old Artix-based Hanh Linux.
 
 
 These PKGBUILDs can be used to build LFS/BLFS with `pacman` support.
